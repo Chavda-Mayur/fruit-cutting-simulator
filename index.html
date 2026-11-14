@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Fruit Cutting Simulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7041267144112275"
+     crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #1b1410;
+      --fg: #f4eadb;
+      --ac: #e5484d;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px)
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 15px system-ui, sans-serif;
+      overflow: hidden;
+      user-select: none
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    canvas {
+      display: block;
+      touch-action: none
+    }
+
+    #hud {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: env(safe-area-inset-top, 0px);
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      pointer-events: none
+    }
+
+    #hud>* {
+      pointer-events: auto
+    }
+
+    button {
+      background: #3a2a20;
+      color: var(--fg);
+      border: 1px solid #6b4a34;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font: inherit;
+      cursor: pointer
+    }
+
+    button.on {
+      background: var(--ac);
+      border-color: var(--ac)
+    }
+
+    button:disabled {
+      opacity: .4;
+      cursor: default
+    }
+
+    .pill {
+      background: #0008;
+      padding: 6px 12px;
+      border-radius: 20px
+    }
+
+    #bar {
+      flex: 1 1 140px;
+      height: 10px;
+      background: #0008;
+      border-radius: 6px;
+      overflow: hidden;
+      min-width: 120px
+    }
+
+    #bar i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--ac);
+      transition: width .2s
+    }
+
+    #bot {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: env(safe-area-inset-bottom, 0px);
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap
+    }
+
+    #menu,
+    #home,
+    #set {
+      position: fixed;
+      inset: 0;
+      background: #1b1410f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 16px;
+      overflow: auto
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      max-width: 640px;
+      width: 100%
+    }
+
+    .card {
+      padding: 16px 8px;
+      text-align: center;
+      border-radius: 12px;
+      background: #2b2019;
+      border: 1px solid #4d3626
+    }
+
+    .card.ok {
+      border-color: var(--ac);
+      cursor: pointer;
+      background: #4a2326
+    }
+
+    .card small {
+      display: block;
+      opacity: .6;
+      margin-top: 4px
+    }
+
+    #toast {
+      position: fixed;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 22px;
+      background: #000a;
+      padding: 10px 20px;
+      border-radius: 12px;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      text-align: center
+    }
+
+    svg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none
+    }
+
+    html,
+    body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      height: 100dvh
+    }
+
+    @media (max-width:700px) {
+      #hud {
+        padding: 6px;
+        gap: 6px;
+        font-size: 13px
+      }
+
+      #opts,
+      #spd {
+        flex: 1 1 100%;
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 2px
+      }
+
+      #opts button,
+      #spd button {
+        flex: 0 0 auto;
+        padding: 6px 10px;
+        font-size: 13px
+      }
+
+      #bar {
+        order: 5;
+        flex: 1 1 100%
+      }
+
+      #bot {
+        gap: 6px;
+        padding: 8px
+      }
+
+      #bot button {
+        flex: 1 1 28%;
+        padding: 12px 6px;
+        font-size: 15px
+      }
+
+      #grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      #toast {
+        font-size: 18px;
+        width: 80%
+      }
+    }
+
+    #opts,
+    #spd {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px
+    }
+
+    .lb {
+      font-size: 12px;
+      opacity: .7
+    }
+
+    #panel {
+      position: fixed;
+      left: 8px;
+      right: 8px;
+      bottom: calc(176px + env(safe-area-inset-bottom, 0px));
+      max-width: 560px;
+      margin: 0 auto;
+      background: #1b1410f0;
+      border: 1px solid #4d3626;
+      border-radius: 14px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    #bot {
+      flex-wrap: nowrap;
+      max-width: 560px;
+      margin: 0 auto
+    }
+
+    #bot button {
+      flex: 1 1 0;
+      padding: 14px 4px;
+      font-size: 15px
+    }
+
+    #cut,
+    #pause,
+    #resume {
+      flex: 1.7 1 0 !important
+    }
+
+    #cut:disabled,
+    #pause:disabled,
+    #resume:disabled {
+      display: none
+    }
+
+    #cutrow {
+      position: fixed;
+      left: 8px;
+      right: 8px;
+      bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    #cutrow #opts {
+      flex: 1;
+      justify-content: center
+    }
+
+    #cutrow button {
+      flex: 0 0 auto !important;
+      padding: 8px 13px;
+      font-size: 14px
+    }
+
+    #spdrow {
+      position: fixed;
+      left: 8px;
+      right: 8px;
+      bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    #spdrow #spd {
+      flex: 1;
+      justify-content: center
+    }
+
+    #spdrow button {
+      flex: 0 0 auto !important;
+      padding: 8px 10px;
+      font-size: 14px
+    }
+
+    #cutrow .lb,
+    #spdrow .lb {
+      width: 44px
+    }
+  </style>
+</head>
+
+<body>
+  <svg id="trail" width="100%" height="100%">
+    <line id="ln" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity="0" />
+  </svg>
+  <div id="hud" hidden>
+    <span class="pill" id="fn"></span><span class="pill">Cuts <b id="cn">0</b>/<b id="ct">1</b></span><span
+      class="pill">Score <b id="sc">0</b></span>
+    <div id="bar"><i></i></div>
+  </div>
+  <div id="bot" hidden>
+    <div id="cutrow"><span class="lb">Cuts</span>
+      <div id="opts"></div>
+    </div>
+    <div id="spdrow"><span class="lb">Speed</span>
+      <div id="spd"></div>
+    </div><button id="cut" class="on">Cut</button><button id="pause">Pause</button><button
+      id="resume">Resume</button><button id="reset">Reset</button><button id="opt">Options</button><button
+      id="next">Fruits</button>
+  </div>
+  <div id="panel" hidden><button id="snd" class="on">Sound on</button></div>
+  <div id="menu" hidden>
+    <h1 style="margin:0">Fruit Cutting Simulator</h1>
+    <div>Choose a fruit</div>
+    <div id="grid"></div><button id="mb">Back</button>
+  </div>
+  <div id="home">
+    <h1 style="margin:0;text-align:center">Fruit Cut<br>Simulator</h1><button id="play" class="on"
+      style="width:220px;padding:14px">Play</button><button id="fr" style="width:220px">Fruit selection</button><button
+      id="st" style="width:220px">Settings</button>
+    <div class="pill">Best <b id="bs">0</b> | Total cuts <b id="tc">0</b></div>
+  </div>
+  <div id="set" hidden>
+    <h2 style="margin:0">Settings</h2><button id="ss">Sound on</button><button id="sv">Vibration on</button><button
+      id="cl">Close</button>
+  </div>
+  <div id="toast"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="./admob.bundle.js"></script>
+  <script>
+    const $ = id => document.getElementById(id), Z = new THREE.Vector3(0, 0, 1);
+    const FRUITS = ['Watermelon', 'Apple', 'Orange', 'Kiwi', 'Mango', 'Pineapple', 'Lemon', 'Dragon Fruit', 'Coconut', 'Strawberry'];
+
+    // ---------- renderer / scene ----------
+    const rd = new THREE.WebGLRenderer({ antialias: true }); rd.setPixelRatio(Math.min(devicePixelRatio, 2)); rd.shadowMap.enabled = true; rd.localClippingEnabled = true; rd.outputEncoding = THREE.sRGBEncoding; document.body.prepend(rd.domElement);
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(45, 1, .1, 50);
+    function size() { rd.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.fov = cam.aspect < 1 ? 50 : 45; cam.updateProjectionMatrix() } addEventListener('resize', size); size();
+    function cv(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t }
+    const wood = cv(512, 512, (g, w, h) => { for (let y = 0; y < h; y++) { g.fillStyle = `hsl(${28 + 4 * Math.sin(y / 9)},${45 + 8 * Math.sin(y / 23)}%,${42 + 7 * Math.sin(y / 5 + Math.sin(y / 37) * 3)}%)`; g.fillRect(0, y, w, 1) } for (let i = 0; i < 60; i++) { g.strokeStyle = '#5a361855'; g.beginPath(); const y = Math.random() * h; g.moveTo(0, y); g.bezierCurveTo(w / 3, y + 8, w * 2 / 3, y - 8, w, y + 4); g.stroke() } });
+    const wall = cv(512, 512, (g, w, h) => { g.fillStyle = '#d9d2c4'; g.fillRect(0, 0, w, h); g.strokeStyle = '#b8b0a0'; g.lineWidth = 3; for (let i = 0; i <= 8; i++) { g.strokeRect(i * 64 - 1, 0, 64, h); g.strokeRect(0, i * 64 - 1, w, 64) } }); wall.wrapS = wall.wrapT = THREE.RepeatWrapping; wall.repeat.set(4, 2);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(5, .25, 3.2), new THREE.MeshStandardMaterial({ map: wood, roughness: .7 })); board.position.y = -.125; board.receiveShadow = true; scene.add(board);
+    const bk = new THREE.Mesh(new THREE.PlaneGeometry(14, 7), new THREE.MeshStandardMaterial({ map: wall, roughness: .9 })); bk.position.set(0, 2.5, -3); bk.receiveShadow = true; scene.add(bk);
+    const cnt = new THREE.Mesh(new THREE.BoxGeometry(14, .2, 8), new THREE.MeshStandardMaterial({ color: 0x6e6a66, roughness: .5 })); cnt.position.set(0, -.35, 0); scene.add(cnt);
+    scene.add(new THREE.HemisphereLight(0xfff4e0, 0x554433, .7));
+    const sun = new THREE.DirectionalLight(0xfff0d8, .95); sun.position.set(2.5, 5, 3); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3 }); scene.add(sun);
+    // ---------- fruit textures ----------
+    const shellTex = cv(512, 256, (g, w, h) => { for (let x = 0; x < w; x++) { g.fillStyle = `hsl(118,${42 + 20 * Math.sin(x / 7)}%,${20 + 11 * Math.sin(x / (w / 30) * 6.28 + Math.sin(x / 11))}%)`; g.fillRect(x, 0, 1, h) } for (let i = 0; i < 500; i++) { g.fillStyle = '#ffffff08'; g.fillRect(Math.random() * w, Math.random() * h, 3, 3) } });
+    const FC = {}; function face(r) { const k = F.i + '_' + Math.round(r * 20) + '_' + (Math.random() * 3 | 0); return FC[k] || (FC[k] = cv(256, 256, (g, w) => paint(g, w, r))) }
+    function face0(r) {
+      return cv(256, 256, (g, w) => {
+        const c = w / 2, rd = .1 / r, k = c - 1; let gr = g.createRadialGradient(c, c, 0, c, c, k); const a = 1 - rd * 2.2, b = 1 - rd * 1.2, e = 1 - rd * .5;
+        gr.addColorStop(0, '#ff5a66'); gr.addColorStop(Math.max(.2, a - .2), '#f03a4e'); gr.addColorStop(a, '#f9a0a6'); gr.addColorStop(b, '#f2f0d0'); gr.addColorStop(e, '#9ccf6a'); gr.addColorStop(1, '#2d7a35'); g.fillStyle = '#2d7a35'; g.fillRect(0, 0, w, w); g.fillStyle = gr; g.beginPath(); g.arc(c, c, k, 0, 7); g.fill();
+        for (let i = 0; i < 26; i++) { const an = Math.random() * 6.28, d = Math.random() * (a - .1) * k; g.save(); g.translate(c + Math.cos(an) * d, c + Math.sin(an) * d); g.rotate(Math.random() * 6.28); g.fillStyle = '#1a1210'; g.beginPath(); g.ellipse(0, 0, 3, 6, 0, 0, 7); g.fill(); g.restore() }
+        for (let i = 0; i < 800; i++) { g.fillStyle = '#ffffff10'; g.fillRect(Math.random() * w, Math.random() * w, 2, 2) }
+      })
+    }
+    // ---------- fruit model (convex pieces of a unit sphere, 600 volume sample points) ----------
+    const root = new THREE.Group(); root.scale.set(.85, .72, 1.05); root.position.y = .72; scene.add(root);
+    const sph = new THREE.SphereGeometry(1, 64, 48), PTS = []; while (PTS.length < 1500) { const v = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1); if (v.lengthSq() <= 1) PTS.push(v) }
+    let pieces = [], hist = [], cuts = 0, target = 1, score = 0, roundFinished = false;
+    function mk(cons, pts, pos) {
+      const g = new THREE.Group(); g.position.copy(pos); const planes = cons.map(() => new THREE.Plane());
+      const sh = new THREE.Mesh(sph, new THREE.MeshStandardMaterial({ map: F.tex, roughness: .4, clippingPlanes: planes, clipShadows: true })); sh.castShadow = true; g.add(sh);
+      cons.forEach((c, k) => {
+        if (Math.abs(c.d) >= .98) return; const r = Math.sqrt(1 - c.d * c.d), m = new THREE.Mesh(new THREE.CircleGeometry(1, 32), new THREE.MeshStandardMaterial({ map: face(r), roughness: .45, side: THREE.DoubleSide, clippingPlanes: planes.filter((_, j) => j !== k), clipShadows: true }));
+        m.scale.setScalar(r); m.position.copy(c.n).multiplyScalar(c.d); m.quaternion.setFromUnitVectors(Z, c.n); m.castShadow = true; g.add(m)
+      });
+      root.add(g); return { g, cons, pts, pos: g.position, vel: new THREE.Vector3(), planes, minY: Math.min(...pts.map(p => p.y)), c: pts.reduce((s, v) => s.add(v), new THREE.Vector3()).divideScalar(pts.length), ctr: new THREE.Vector3(), rr: Math.cbrt(pts.length / PTS.length) * .75 + .05 }
+    }
+    function build(data) { pieces.forEach(p => root.remove(p.g)); pieces = data.map(d => mk(d.cons, d.pts, d.pos)) }
+    const snap = () => pieces.map(p => ({ cons: p.cons, pts: p.pts, pos: p.pos.clone() }));
+    function resetFruit() {
+      roundFinished = false;
+      au.run = au.pause = false;
+      knife.visible = false;
+      hist = [];
+      cuts = 0;
+      score = 0;
+      build([{ cons: [], pts: PTS, pos: new THREE.Vector3() }]);
+      ui();
+    }// ---------- cutting ----------
+
+    function doCut(a, b) {
+      if (roundFinished || au.run) return;
+
+      const ray = p => new THREE.Vector3(
+        p.x / innerWidth * 2 - 1,
+        -p.y / innerHeight * 2 + 1,
+        .5
+      ).unproject(cam).sub(cam.position).normalize();
+
+      const N = new THREE.Vector3().crossVectors(ray(a), ray(b)).normalize();
+      const pl = new THREE.Plane().setFromNormalAndCoplanarPoint(N, cam.position);
+
+      root.updateMatrixWorld(true);
+      pl.applyMatrix4(new THREE.Matrix4().copy(root.matrixWorld).invert());
+
+      const n = pl.normal.clone(), d = -pl.constant, before = snap(), out = [];
+      let split = false;
+
+      for (const p of pieces) {
+        const dd = d - n.dot(p.pos), A = [], B = [];
+
+        for (const v of p.pts) {
+          (n.dot(v) - dd >= 0 ? A : B).push(v);
+        }
+
+        if (A.length < 8 || B.length < 8) {
+          out.push({
+            cons: p.cons,
+            pts: p.pts,
+            pos: p.pos.clone(),
+            vel: p.vel.clone()
+          });
+          continue;
+        }
+
+        split = true;
+
+        const mkp = (s, pts) => ({
+          cons: [...p.cons, { n, d: dd, s }],
+          pts,
+          pos: p.pos.clone(),
+          vel: p.vel.clone()
+            .addScaledVector(n, s * .9)
+            .add(new THREE.Vector3(0, .5, 0))
+        });
+
+        out.push(mkp(1, A), mkp(-1, B));
+      }
+
+      if (!split) {
+        toast('Missed: swipe across the fruit');
+        return;
+      }
+
+      hist.push(before);
+      build(out);
+
+      pieces.forEach((p, i) => p.vel.copy(out[i].vel));
+
+      cuts++;
+      score += 100;
+
+      sfx();
+      juice(N, pl);
+      ui();
+
+      if (cuts >= target) finish();
+    }
+    function toast(t) { const e = $('toast'); e.textContent = t; e.style.opacity = 1; clearTimeout(e.t); e.t = setTimeout(() => e.style.opacity = 0, 1400) }
+    function ui() { $('cn').textContent = cuts; $('ct').textContent = target; $('sc').textContent = score; $('bar').firstChild.style.width = Math.min(100, cuts / target * 100) + '%';[...$('opts').children].forEach(b => b.classList.toggle('on', +b.dataset.n === target));[...$('spd').children].forEach((b, i) => b.classList.toggle('on', i === spd)); $('cut').disabled = au.run; $('pause').disabled = !au.run || au.pause; $('resume').disabled = !au.pause }
+    [1, 4, 8, 16, 32, 64].forEach(n => { const b = document.createElement('button'); b.textContent = n; b.dataset.n = n; b.onclick = () => { target = n; resetFruit() }; $('opts').appendChild(b) });
+    const au = { run: false, pause: false, ph: 'wait', t: 0, cut: false, plan: null, fin: 0 };
+    function plan() { const order = [...pieces].sort((a, b) => b.pts.length - a.pts.length); for (const P of order) { if (P.pts.length < 10) break; for (let i = 0; i < 14; i++) { const th = cuts * 2.4 + .4 + i * .22, n = new THREE.Vector3(Math.cos(th), 0, Math.sin(th)), dd = n.dot(P.c); let A = 0; for (const v of P.pts) if (n.dot(v) - dd >= 0) A++; if (A >= 4 && P.pts.length - A >= 4) return { P, n, dd } } } return null }
+    function aim(pl) { const w = root.localToWorld(pl.P.c.clone().add(pl.P.pos)), tx = -pl.n.z * root.scale.x, tz = pl.n.x * root.scale.z; knife.position.set(w.x, 2.6, w.z); knife.rotation.set(0, Math.atan2(-tz, tx), 0); knife.visible = true }
+    function doAuto() {
+      const { P, n, dd } = au.plan, w = root.localToWorld(P.c.clone().add(P.pos)), s = [1, -1].map(sg => mk([...P.cons, { n, d: dd, s: sg }], P.pts.filter(v => (n.dot(v) - dd >= 0) === (sg > 0)), P.pos.clone()));
+      s.forEach((q, i) => q.vel.copy(P.vel).addScaledVector(n, (i ? -1 : 1) * .5).add(new THREE.Vector3(0, .4, 0)));
+      root.remove(P.g); P.g.traverse(o => { if (o.isMesh) { if (o.geometry !== sph) o.geometry.dispose(); o.material.dispose() } });
+      pieces.splice(pieces.indexOf(P), 1, ...s); cuts++; score += 100; sfx(); if (SV.vib !== false && navigator.vibrate) navigator.vibrate(12); juice(new THREE.Vector3(n.x / root.scale.x, 0, n.z / root.scale.z).normalize(), 0, w); ui()
+    }
+    function finish() {
+
+      // Prevent duplicate completion and multiple ads
+      if (roundFinished) return;
+      roundFinished = true;
+
+      au.run = false;
+      au.fin = 1;
+
+      SV.best = Math.max(SV.best || 0, score);
+      SV.total = (SV.total || 0) + cuts;
+
+      save();
+      refreshHome();
+
+      toast('Complete! ' + cuts + ' cuts, ' + score + ' points');
+
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          const P = pieces[Math.random() * pieces.length | 0];
+
+          if (P) juice(
+            new THREE.Vector3(Math.random() - .5, 0, Math.random() - .5).normalize(),
+            0,
+            root.localToWorld(P.c.clone().add(P.pos))
+          );
+        }, i * 150);
+      }
+
+      ui();
+
+      // Show Interstitial Ad after game completion
+      setTimeout(() => {
+        window.showGameInterstitial?.();
+      }, 900);
+    } function stepAuto(dt) {
+      if (!au.run || au.pause) return; au.t += dt * SPF[spd];
+      if (au.ph === 'wait') { if (au.t > .5) { au.plan = plan(); if (!au.plan) { finish(); return } aim(au.plan); au.ph = 'down'; au.t = 0; au.cut = false } }
+      else if (au.ph === 'down') { const u = Math.min(1, au.t / .55), e = u * u * (3 - 2 * u); knife.position.y = 2.6 - 2.13 * e; if (u >= .6 && !au.cut) { au.cut = true; doAuto() } if (u >= 1) { au.ph = 'up'; au.t = 0 } }
+      else { const u = Math.min(1, au.t / .4); knife.position.y = .47 + 2.1 * u * u; if (u >= 1) { knife.visible = false; if (cuts >= target) finish(); else { au.ph = 'wait'; au.t = 0 } } }
+    }
+    let F = null, spd = 0; const SPF = [1, 2.5, 5, 10], SV = (() => { try { return JSON.parse(localStorage.getItem('fcs') || '{}') } catch (e) { return {} } })();
+    function save() { try { localStorage.setItem('fcs', JSON.stringify(SV)) } catch (e) { } }
+    function refreshHome() { $('bs').textContent = SV.best || 0; $('tc').textContent = SV.total || 0 }
+    const FR = [
+      { n: 'Watermelon', sc: [.85, .72, 1.05], rind: .1, ring: ['#2d7a35', '#f2f0d0', '#f9a0a6', '#f03a4e', '#ff5a66'], seed: { n: 26, c: '#1a1210', s: 6, r: [0, .95] }, juice: 0xff3a55, t: ['#5aa63c', '#173f1d', 'stripe'] },
+      { n: 'Apple', sc: [.7, .66, .7], rind: .035, ring: ['#c62828', '#f4efd8', '#f7f1d6', '#fbf6e2', '#efe6bf'], seed: { n: 6, c: '#4a2a14', s: 5, r: [.05, .2] }, juice: 0xf2e6a0, t: ['#c8312d', '#7a1010', 'noise'] },
+      { n: 'Orange', sc: [.7, .66, .7], rind: .09, ring: ['#f08a1c', '#fbe9c0', '#ffa726', '#ff9a0e', '#ffc86a'], seg: 10, juice: 0xffa020, t: ['#f28a1c', '#d56a00', 'noise'] },
+      { n: 'Kiwi', sc: [.55, .5, .7], rind: .05, ring: ['#7a5a38', '#b9d86a', '#7cc24a', '#5fae3a', '#f1f6d8'], seed: { n: 40, c: '#15110d', s: 4, r: [.25, .6] }, juice: 0x8fd14f, t: ['#8b6a43', '#4a3520', 'noise'] },
+      { n: 'Mango', sc: [.65, .55, .85], rind: .04, ring: ['#e8a317', '#ffd04a', '#ffc21f', '#ffb300', '#f7e3a0'], juice: 0xffb300, t: ['#f0a20e', '#d6402a', 'noise'] },
+      { n: 'Pineapple', sc: [.55, .9, .55], rind: .06, ring: ['#9a6b1e', '#f6e27a', '#fbdc4a', '#fbd034', '#f7ecb0'], juice: 0xffd84a, t: ['#d9a528', '#6b4a12', 'grid'] },
+      { n: 'Lemon', sc: [.52, .45, .7], rind: .06, ring: ['#f2d21b', '#fff7c2', '#fdf09a', '#faea7a', '#fffbd8'], seg: 9, juice: 0xf5e65a, t: ['#f4d81c', '#c9a800', 'noise'] },
+      { n: 'Dragon Fruit', sc: [.6, .5, .85], rind: .05, ring: ['#d81b60', '#ffffff', '#fbf7f8', '#fffafb', '#ffffff'], seed: { n: 160, c: '#111111', s: 3, r: [0, .95] }, juice: 0xe64a8a, t: ['#d81b60', '#7bc043', 'noise'] },
+      { n: 'Coconut', sc: [.7, .7, .75], rind: .18, ring: ['#6b4a2b', '#8d6a44', '#fdfcf5', '#f4f1e8', '#e8f0f2'], juice: 0xf5f5f5, t: ['#6b4a2b', '#3a2512', 'noise'] },
+      { n: 'Strawberry', sc: [.5, .55, .5], rind: .02, ring: ['#d4172b', '#f6b8b8', '#e9303f', '#f26a76', '#fbe6e6'], seed: { n: 24, c: '#f3d26b', s: 3, r: [.55, .95] }, juice: 0xff3a55, t: ['#d4172b', '#f3d26b', 'dots'] }];
+    function shellPaint(g, w, h, t) {
+      const [a, b, m] = t; g.fillStyle = a; g.fillRect(0, 0, w, h); for (let i = 0; i < 1200; i++) { g.fillStyle = b + '28'; g.fillRect(Math.random() * w, Math.random() * h, 8, 8) }
+      if (m === 'stripe') for (let x = 0; x < w; x++) { g.fillStyle = b + (Math.sin(x / (w / 30) * 6.28 + Math.sin(x / 11)) > .2 ? 'cc' : '00'); g.fillRect(x, 0, 1, h) }
+      if (m === 'dots') for (let i = 0; i < 260; i++) { g.fillStyle = '#f3d26b'; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 2, 0, 7); g.fill() }
+      if (m === 'grid') { g.strokeStyle = b; g.lineWidth = 2; for (let i = -h; i < w; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.moveTo(i + h, 0); g.lineTo(i, h); g.stroke() } }
+    }
+    function paint(g, w, r) {
+      const c = w / 2, k = c - 1, rd = Math.min(.6, F.rind / r), a = 1 - rd * 2.2, R = F.ring; g.fillStyle = R[0]; g.fillRect(0, 0, w, w);
+      const gr = g.createRadialGradient(c, c, 0, c, c, k), s1 = Math.max(.05, a - .25), s2 = s1 + .01 > a ? s1 + .01 : a, s3 = Math.max(s2 + .01, 1 - rd * 1.2), s4 = Math.max(s3 + .01, 1 - rd * .5), st = (o, col) => gr.addColorStop(Math.min(1, o), col);
+      st(0, R[4]); st(s1, R[3]); st(s2, R[2]); st(s3, R[1]); st(s4, R[0]); st(1, R[0]); g.fillStyle = gr; g.beginPath(); g.arc(c, c, k, 0, 7); g.fill();
+      if (F.seg) { g.strokeStyle = R[1]; g.lineWidth = 3; for (let i = 0; i < F.seg; i++) { const an = i / F.seg * 6.283; g.beginPath(); g.moveTo(c, c); g.lineTo(c + Math.cos(an) * a * k, c + Math.sin(an) * a * k); g.stroke() } }
+      const S = F.seed; if (S) for (let i = 0; i < S.n; i++) { const an = Math.random() * 6.283, d = (S.r[0] + Math.random() * (S.r[1] - S.r[0])) * a * k; g.save(); g.translate(c + Math.cos(an) * d, c + Math.sin(an) * d); g.rotate(an + 1.57); g.fillStyle = S.c; g.beginPath(); g.ellipse(0, 0, S.s * .5, S.s, 0, 0, 7); g.fill(); g.restore() }
+      for (let i = 0; i < 600; i++) { g.fillStyle = '#ffffff10'; g.fillRect(Math.random() * w, Math.random() * w, 2, 2) }
+    }
+    function startFruit(i) {
+      window.hideHomeBanner?.();
+      F = FR[i]; F.i = i; root.scale.set(...F.sc); root.position.y = F.sc[1]; PM.color.setHex(F.juice); $('fn').textContent = F.n; $('menu').hidden = true; $('hud').hidden = $('bot').hidden = false; resetFruit()
+    }
+    const pr = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true }); pr.setSize(110, 110); pr.outputEncoding = THREE.sRGBEncoding;
+    const ps = new THREE.Scene(), pc = new THREE.PerspectiveCamera(30, 1, .1, 10), pm = new THREE.Mesh(sph, new THREE.MeshStandardMaterial({ roughness: .4 })), pd = new THREE.DirectionalLight(0xffffff, .8); pd.position.set(2, 3, 3); ps.add(pm, pd, new THREE.HemisphereLight(0xffffff, 0x554433, 1.1)); pc.position.set(0, .5, 4.2); pc.lookAt(0, 0, 0);
+    FR.forEach((d, i) => {
+      d.tex = cv(512, 256, (g, w, h) => shellPaint(g, w, h, d.t)); pm.material.map = d.tex; pm.material.needsUpdate = true; pm.scale.set(...d.sc.map(v => v * 1.2)); pm.rotation.y = .6; pr.render(ps, pc);
+      const el = document.createElement('div'); el.className = 'card ok'; el.innerHTML = '<img width=88 height=88 src="' + pr.domElement.toDataURL() + '"><div>' + d.n + '</div>'; el.onclick = () => startFruit(i); $('grid').appendChild(el)
+    });
+    $('play').onclick = $('fr').onclick = () => {
+      window.hideHomeBanner?.();
+      $('home').hidden = true;
+      $('menu').hidden = false;
+    };
+
+    $('mb').onclick = () => {
+      $('menu').hidden = true;
+      if ($('hud').hidden) {
+        $('home').hidden = false;
+        window.showHomeBanner?.();
+      }
+    }; $('st').onclick = () => $('set').hidden = false; $('cl').onclick = () => $('set').hidden = true;
+    const setTxt = () => { $('sv').textContent = 'Vibration ' + (SV.vib === false ? 'off' : 'on'); $('ss').textContent = 'Sound ' + (SV.snd === false ? 'off' : 'on') };
+    $('sv').onclick = () => { SV.vib = SV.vib === false; save(); setTxt() }; $('ss').onclick = () => { $('snd').click(); setTxt() };
+    $('snd').textContent = 'Sound ' + (SV.snd === false ? 'off' : 'on'); setTxt(); refreshHome();
+    ['Normal', 'Fast', 'Ultra', 'Extreme'].forEach((n, i) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { spd = i; ui() }; $('spd').appendChild(b) });
+    $('opt').onclick = () => { $('panel').hidden = !$('panel').hidden };
+    $('cut').onclick = () => { if (au.run) return; $('panel').hidden = true; resetFruit(); au.run = true; au.ph = 'wait'; au.t = .2; ui() }; $('pause').onclick = () => { au.pause = true; ui() }; $('resume').onclick = () => { au.pause = false; ui() };
+    $('reset').onclick = resetFruit;
+
+    $('next').onclick = () => {
+      window.hideHomeBanner?.();
+      au.run = false;
+      au.pause = false;
+      knife.visible = false;
+      ui();
+      $('menu').hidden = false;
+    };
+    // ---------- sound ----------
+    let ac, snd = SV.snd !== false; $('snd').onclick = e => { snd = !snd; SV.snd = snd; save(); e.target.textContent = 'Sound ' + (snd ? 'on' : 'off'); e.target.classList.toggle('on', snd) };
+    function sfx() { if (!snd) return; ac = ac || new AudioContext(); const n = ac.sampleRate * .2, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++)d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2; const s = ac.createBufferSource(), f = ac.createBiquadFilter(); s.buffer = b; f.type = 'bandpass'; f.frequency.setValueAtTime(5000, ac.currentTime); f.frequency.exponentialRampToValueAtTime(800, ac.currentTime + .2); s.connect(f).connect(ac.destination); s.start() }
+    // ---------- juice particles ----------
+    const NP = 300, pp = new Float32Array(NP * 3).fill(-50), pv = new Float32Array(NP * 3), pl8 = new Float32Array(NP); let pi = 0;
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3)); const PM = new THREE.PointsMaterial({ color: 0xff3a55, size: .06, transparent: .8 }); scene.add(new THREE.Points(pg, PM));
+    function juice(N, pl, cc) { const c = cc ? cc.clone() : new THREE.Vector3(0, .72, 0), u = new THREE.Vector3().crossVectors(N, new THREE.Vector3(0, 1, 0)).normalize(); for (let i = 0; i < 70; i++) { const k = pi++ % NP, o = u.clone().multiplyScalar((Math.random() - .5) * 1.4).add(c); o.y += Math.random() * .4; pp.set([o.x, o.y, o.z], k * 3); pv.set([N.x * (Math.random() - .5) * 2 + u.x * (Math.random() - .5), Math.random() * 2.5, N.z * (Math.random() - .5) * 2 + u.z * (Math.random() - .5)], k * 3); pl8[k] = 1 } }
+    // ---------- knife ----------
+    const knife = new THREE.Group(), steel = new THREE.MeshStandardMaterial({ color: 0xdde2e8, metalness: .75, roughness: .25 });
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(2.2, .9, .02), steel); blade.position.x = 0; const hd = new THREE.Mesh(new THREE.BoxGeometry(.5, .09, .08), new THREE.MeshStandardMaterial({ color: 0x1d1612, roughness: .6 })); hd.position.x = 1.35; hd.position.y = .3;
+    knife.add(blade, hd); knife.visible = false; scene.add(knife);
+    // ---------- input ----------
+    let ds = null, dp = null; const ln = $('ln'), pt = e => ({ x: e.clientX, y: e.clientY });
+    function kpos(p) { const r = new THREE.Vector3(p.x / innerWidth * 2 - 1, -p.y / innerHeight * 2 + 1, .5).unproject(cam).sub(cam.position).normalize(); knife.position.copy(cam.position).addScaledVector(r, cam.position.distanceTo(new THREE.Vector3(0, .7, 0.9)) / Math.max(.3, r.dot(new THREE.Vector3(0, -.3, -1).normalize()) * 0 + 1)) }
+    rd.domElement.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      ds = dp = pt(e);
+      knife.visible = true;
+      kpos(ds);
+      ln.setAttribute('opacity', 1);
+      try { rd.domElement.setPointerCapture(e.pointerId) } catch (_) { }
+    });
+    addEventListener('pointermove', e => { if (!ds) return; dp = pt(e); kpos(dp); knife.rotation.z = Math.atan2(-(dp.y - ds.y), dp.x - ds.x) + Math.PI / 2 * 0; ln.setAttribute('x1', ds.x); ln.setAttribute('y1', ds.y); ln.setAttribute('x2', dp.x); ln.setAttribute('y2', dp.y) });
+    addEventListener('pointerup', () => { if (!ds) return; const a = ds, b = dp; ds = null; ln.setAttribute('opacity', 0); setTimeout(() => knife.visible = false, 150); if (Math.hypot(b.x - a.x, b.y - a.y) > 40) doCut(a, b) });
+    // ---------- loop ----------
+    const clk = new THREE.Clock(); let T = 0;
+    (function loop() {
+      requestAnimationFrame(loop); const dt = Math.min(clk.getDelta(), .05); T += dt;
+      au.fin = Math.max(0, au.fin - dt / 1.4); const fz = Math.sin(au.fin * Math.PI); const pz = innerWidth < innerHeight ? 1.6 : 1; cam.position.set(Math.sin(T * .3) * .2, (2.5 - .4 * fz) * pz, (3.9 - .9 * fz) * pz); cam.lookAt(0, .5, 0); stepAuto(dt);
+      for (let i = 0; i < pieces.length; i++) { const a = pieces[i]; a.ctr.copy(a.c).add(a.pos); for (let j = 0; j < i; j++) { const b = pieces[j], dx = a.ctr.x - b.ctr.x, dz = a.ctr.z - b.ctr.z, m = a.rr + b.rr, d = Math.hypot(dx, dz) + 1e-4; if (d < m) { const f = (m - d) * 10 * dt / d; a.vel.x += dx * f; a.vel.z += dz * f; b.vel.x -= dx * f; b.vel.z -= dz * f } } }
+      for (const p of pieces) { p.vel.y -= 14 * dt; p.vel.x -= p.pos.x * .3 * dt; p.vel.z -= p.pos.z * .3 * dt; p.pos.addScaledVector(p.vel, dt); if (p.pos.y + p.minY < -1) { p.pos.y = -1 - p.minY; p.vel.y = Math.abs(p.vel.y) > 1 ? -p.vel.y * .15 : 0 } const f = Math.max(0, 1 - 3 * dt); p.vel.x *= f; p.vel.z *= f }
+      root.updateMatrixWorld(true);
+      for (const p of pieces) p.cons.forEach((c, k) => p.planes[k].set(c.n.clone().multiplyScalar(c.s), -c.s * c.d).applyMatrix4(p.g.matrixWorld));
+      for (let k = 0; k < NP; k++) { if (pl8[k] <= 0) continue; pl8[k] -= dt * .8; pv[k * 3 + 1] -= 9 * dt; for (let j = 0; j < 3; j++)pp[k * 3 + j] += pv[k * 3 + j] * dt; if (pp[k * 3 + 1] < 0.01) { pv[k * 3] = pv[k * 3 + 1] = pv[k * 3 + 2] = 0; pp[k * 3 + 1] = .01 } if (pl8[k] <= 0) pp[k * 3 + 1] = -50 }
+      pg.attributes.position.needsUpdate = true; rd.render(scene, cam)
+    })();
+
+    window.initAdMob?.();
+
+  </script>
+</body>
+
+</html>
